@@ -10,5 +10,7 @@
   "author": "Urmi Rani Biswas",
   "author_verification": "HTML author, Word author and creator metadata, Quarto source, README verified",
   "standalone_source": "Starter commit read from protocol.json; no Git command or Git-history requirement",
-  "assignment_audit": "All eight requested report components, study comparison, verdict, extension and author verified; submission format and Classroom push remain user-facing submission tasks"
+  "assignment_audit": "All eight requested report components, study comparison, verdict, extension and author verified; submission format and Classroom push remain user-facing submission tasks",
+  "source_repository": "https://github.com/urmi987/week-8-lab-3",
+  "repository_links": "Verified clickable repository hyperlinks in HTML and Word"
 }

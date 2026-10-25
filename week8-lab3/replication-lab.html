@@ -2296,6 +2296,9 @@ vertical-align: -.125em;
 
 <section id="study-and-replication-question" class="level1">
 <h1>Study and replication question</h1>
+<p><strong>Author:</strong> Urmi Rani Biswas<br>
+<strong>Source code and reproducibility materials:</strong> <a href="https://github.com/urmi987/week-8-lab-3">github.com/urmi987/week-8-lab-3</a><br>
+<strong>Analysis directory:</strong> <code>week8-lab3/</code> in the repository.</p>
 <p><strong>Article:</strong> <em>WILDS: A Benchmark of in-the-Wild Distribution Shifts</em>, Koh et al. (2021), ICML/PMLR 139, 5637–5664. <strong>Strategy:</strong> Partial replication. <strong>Question:</strong> Does a single toxicity classifier generalize equally well to held-out comments with and without a Muslim-identity annotation when only the latter environment is represented in training?</p>
 <p>The course starter is a general scholarly-report template. It supplies no dataset, model, or Week 8 split. The choices below operationalize the assignment using original CivilComments-WILDS data and an adapted, explicitly documented experiment. They are analyst choices, not instructor-prescribed settings.</p>
 </section>
@@ -2313,7 +2316,7 @@ vertical-align: -.125em;
 <h1>3. Data and environments</h1>
 <p>The unit of analysis is one online comment. Toxicity is positive when its crowd annotation score is at least 0.5, following WILDS. Predictors are word unigrams and bigrams from <code>comment_text</code>; identity metadata, other toxicity annotations, reactions, publication identifiers, and timestamps are excluded from the predictor matrix <span class="citation" data-cites="borkan2019">(<a href="#ref-borkan2019" role="doc-biblioref">Borkan et al. 2019</a>)</span>.</p>
 <p>The source is the <a href="https://huggingface.co/datasets/shlomihod/civil-comments-wilds/blob/3fbfeca/all_data_with_identities.csv">CivilComments-WILDS CSV mirror</a>, pinned to revision <code>3fbfeca</code>. The <a href="https://github.com/p-lambda/wilds/blob/main/wilds/datasets/civilcomments_dataset.py">official WILDS loader</a> documents the schema and label thresholds. The original CodaLab URL failed certificate validation during this run; the mirror’s published SHA-256 was verified before analysis. This verifies the downloaded mirror artifact, not an independent comparison against an inaccessible original download. The raw corpus is CC0; it is not included in the submission package.</p>
-<div id="66e905e6" class="cell" data-execution_count="2">
+<div id="18985e4b" class="cell" data-execution_count="2">
 <div class="cell-output cell-output-display cell-output-markdown">
 <p>The raw file contains <strong>448,000 comments</strong>: 269,038 train, 45,180 validation, and 133,782 test. Required-field filtering removed 2 rows; normalized-text deduplication removed 3,448 rows. Deduplication retains train before validation before test and uses lowercase, whitespace-normalized text. It does not remove semantic paraphrases. Original validation rows and training rows in the shifted environment are not used to fit or select the model.</p>
 </div>
@@ -2370,7 +2373,7 @@ vertical-align: -.125em;
 </section>
 <section id="results-one-model-two-environments" class="level1">
 <h1>5. Results: one model, two environments</h1>
-<div id="e1b9d4f0" class="cell" data-execution_count="3">
+<div id="6148e918" class="cell" data-execution_count="3">
 <div class="cell-output cell-output-display cell-output-markdown">
 <table class="caption-top table table-sm table-striped small">
 <thead>
@@ -2438,7 +2441,7 @@ vertical-align: -.125em;
 <section id="look-beneath-the-average" class="level2">
 <h2 class="anchored" data-anchor-id="look-beneath-the-average">Look beneath the average</h2>
 <p>Groups overlap: a comment can mention multiple identities. Group membership describes comment content, not authors or readers. The table reports sample size and accuracy within every available positive identity annotation; an absent ID Muslim group is a consequence of the split, not zero accuracy.</p>
-<div id="b9a7b879" class="cell" data-execution_count="4">
+<div id="9c43747e" class="cell" data-execution_count="4">
 <div class="cell-output cell-output-display cell-output-markdown">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
@@ -2566,7 +2569,7 @@ vertical-align: -.125em;
 </section>
 <section id="diagnose-before-retraining" class="level2">
 <h2 class="anchored" data-anchor-id="diagnose-before-retraining">Diagnose before retraining</h2>
-<div id="1c7e6151" class="cell" data-execution_count="5">
+<div id="cb9e5f3b" class="cell" data-execution_count="5">
 <div class="cell-output cell-output-display cell-output-markdown">
 <p>Toxic prevalence changes from 10.70% to 23.37% (+12.68 percentage points). Average comment length changes from 344.7 to 457.1 characters. Both composition and text content therefore differ. The largest absolute standardized changes among TF-IDF predictor coordinates are shown below. Each difference is (shifted mean − ID mean) divided by its development standard deviation; it describes lexical composition, not a causal feature effect.</p>
 </div>
@@ -2624,7 +2627,7 @@ vertical-align: -.125em;
 <section id="compare-with-the-original-study" class="level1">
 <h1>6. Compare with the original study</h1>
 <p>In Table 1, Koh et al. report <strong>92.2% (SD 0.1)</strong> average accuracy and <strong>56.0% (SD 3.6)</strong> worst-group accuracy for CivilComments-WILDS under empirical risk minimization <span class="citation" data-cites="koh2021wilds">(<a href="#ref-koh2021wilds" role="doc-biblioref"><span class="nocase">Koh et al.</span> 2021</a>)</span>. Those parentheses summarize variation across replicate training runs, not a confidence interval for this experiment. The two paper values summarize different aggregations, with an “Average” ID comparison; they are not performance estimates on our two annotation-defined test environments.</p>
-<div id="5c2e20c5" class="cell" data-execution_count="6">
+<div id="b8d039b4" class="cell" data-execution_count="6">
 <div class="cell-output cell-output-display cell-output-markdown">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
@@ -2676,6 +2679,7 @@ vertical-align: -.125em;
 </section>
 <section id="reproducibility-check" class="level1">
 <h1>7. Reproducibility check</h1>
+<p>The source repository for this submission is <a href="https://github.com/urmi987/week-8-lab-3">Urmi Rani Biswas — Week 8 Lab 3</a>. The <code>week8-lab3/</code> directory contains the Quarto source, analysis and data-download scripts, protocol, dependency lock, and saved results. Its README provides the reproduction commands; the raw dataset is obtained separately using the documented download script.</p>
 <ul class="task-list">
 <li><label><input type="checkbox" checked>Data source, pinned mirror revision, and checksum documented.</label></li>
 <li><label><input type="checkbox" checked>One end-to-end executable analysis and training-only preprocessing.</label></li>
@@ -2689,7 +2693,7 @@ vertical-align: -.125em;
 <section id="session-information" class="level2">
 <h2 class="anchored" data-anchor-id="session-information">Session information</h2>
 <p>The submitted report was rendered with Quarto 1.10.19. Python and analytical package versions are generated below from the actual execution environment.</p>
-<div id="dcf52a43" class="cell" data-execution_count="7">
+<div id="1a3ee8db" class="cell" data-execution_count="7">
 <div class="cell-output cell-output-display cell-output-markdown">
 <p><strong>Python:</strong> 3.14.4<br>
 <strong>Platform:</strong> macOS-26.6.2-arm64-arm-64bit-Mach-O<br>

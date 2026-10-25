@@ -43,6 +43,10 @@ def table(frame): display(Markdown(frame.to_markdown(index=False)))
 
 # Study and replication question
 
+**Author:** Urmi Rani Biswas  
+**Source code and reproducibility materials:** [github.com/urmi987/week-8-lab-3](https://github.com/urmi987/week-8-lab-3)  
+**Analysis directory:** `week8-lab3/` in the repository.
+
 **Article:** *WILDS: A Benchmark of in-the-Wild Distribution Shifts*, Koh et al. (2021), ICML/PMLR 139, 5637–5664. **Strategy:** Partial replication. **Question:** Does a single toxicity classifier generalize equally well to held-out comments with and without a Muslim-identity annotation when only the latter environment is represented in training?
 
 The course starter is a general scholarly-report template. It supplies no dataset, model, or Week 8 split. The choices below operationalize the assignment using original CivilComments-WILDS data and an adapted, explicitly documented experiment. They are analyst choices, not instructor-prescribed settings.
@@ -166,6 +170,8 @@ The available evidence does not justify relying on development-like accuracy for
 This is one annotation-defined shift, one model configuration, and one seed. It cannot establish causal discrimination, author-level fairness, performance on other religions or languages, chronological transportability, or real moderation outcomes. Crowd labels may reflect disagreement or annotation bias. Deduplication removes exact normalized matches but not near duplicates, common articles, or conversation dependencies. The row bootstrap may understate uncertainty when comments are clustered by article or publication. ECE depends on binning, and Brier score reflects both prevalence and probability quality. No held-out deployment data, human baseline, multi-seed model variation, or intervention evaluation is available. These limits motivate revalidation even if some aggregate metrics appear favorable.
 
 # 7. Reproducibility check
+
+The source repository for this submission is [Urmi Rani Biswas — Week 8 Lab 3](https://github.com/urmi987/week-8-lab-3). The `week8-lab3/` directory contains the Quarto source, analysis and data-download scripts, protocol, dependency lock, and saved results. Its README provides the reproduction commands; the raw dataset is obtained separately using the documented download script.
 
 - [x] Data source, pinned mirror revision, and checksum documented.
 - [x] One end-to-end executable analysis and training-only preprocessing.

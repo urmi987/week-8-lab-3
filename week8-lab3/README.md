@@ -1,5 +1,8 @@
 # Week 8 — Replication Laboratory #3
 
+Source repository: https://github.com/urmi987/week-8-lab-3  
+Analysis directory: `week8-lab3/`.
+
 Completed analysis based on the course `replication-lab/replication-lab.qmd` template.
 The original template remains unchanged. Starter commit:
 `2326687d77e54ddc30ae34367e48cec1a6069027`.
@@ -11,7 +14,7 @@ The original template remains unchanged. Starter commit:
 - `replication-lab.qmd`: executable editable source; every render reruns the complete analysis.
 
 Author: **Urmi Rani Biswas** (included in both rendered reports and the Quarto source).
-Read and verify the interpretation before submission. No upload, push, or Canvas submission has been performed.
+Read and verify the interpretation before submission. This package does not automatically push changes or submit to Canvas.
 
 ## Research design
 
