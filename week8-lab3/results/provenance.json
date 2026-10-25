@@ -1,0 +1,43 @@
+{
+  "data_sha256": "403e638c83a225d738a937ff98b61fd0631e30f710d57928c7766d413526b77f",
+  "original_n": 448000,
+  "original_splits": {
+    "train": 269038,
+    "test": 133782,
+    "val": 45180
+  },
+  "missing_removed": 2,
+  "duplicate_text_removed": 3448,
+  "accuracy_delta_ci": [
+    -0.13140503308199608,
+    -0.11250044826272987
+  ],
+  "seed": 735,
+  "oov_ngram_rate": {
+    "ID": 0.25987014586742263,
+    "Shifted": 0.2718023867628733
+  },
+  "python": "3.14.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "jupyter": "1.1.1",
+    "tabulate": "0.10.0"
+  },
+  "template_commit": "2326687d77e54ddc30ae34367e48cec1a6069027",
+  "model_iterations": [
+    12
+  ],
+  "checks": [
+    "checksum verified",
+    "required fields complete",
+    "environment membership verified",
+    "no normalized text overlap between train and either test or between tests",
+    "single fit",
+    "training-only vocabulary",
+    "convergence warning treated as error"
+  ]
+}

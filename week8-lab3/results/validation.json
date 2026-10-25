@@ -1,0 +1,14 @@
+{
+  "analysis": "Executed end to end without convergence warnings or integrity-check failures",
+  "reports": "Both HTML and DOCX executed and rendered by Quarto 1.10.19",
+  "tables_per_report": 7,
+  "citations_resolved": 2,
+  "html_resources": "Self-contained; no external script or stylesheet dependencies",
+  "docx": "Valid ZIP/XML; key results and verdict verified",
+  "numerical_integrity": "Confusion-count totals, accuracy calculations, unique manifest IDs and environment sample sizes verified",
+  "distribution": "Raw comments and virtual environment excluded from ZIP; pinned download script included",
+  "author": "Urmi Rani Biswas",
+  "author_verification": "HTML author, Word author and creator metadata, Quarto source, README verified",
+  "standalone_source": "Starter commit read from protocol.json; no Git command or Git-history requirement",
+  "assignment_audit": "All eight requested report components, study comparison, verdict, extension and author verified; submission format and Classroom push remain user-facing submission tasks"
+}

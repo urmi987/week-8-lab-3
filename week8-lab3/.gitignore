@@ -1,0 +1,6 @@
+data/*.csv
+data/*.part
+.jupyter_cache/
+*_files/
+*.quarto_ipynb
+__pycache__/

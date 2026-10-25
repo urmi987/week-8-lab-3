@@ -1,0 +1,17 @@
+{
+  "starter_commit": "2326687d77e54ddc30ae34367e48cec1a6069027",
+  "strategy": "Partial replication using CivilComments-WILDS data with an adapted environment split and linear text model",
+  "seed": 735,
+  "environment": "muslim annotation >= 0.5",
+  "development": "official train, muslim < 0.5",
+  "id": "official test, muslim < 0.5",
+  "shifted": "official test, muslim >= 0.5",
+  "threshold": 0.5,
+  "model": "TF-IDF word unigrams and bigrams, max_features=50000, min_df=3, sublinear_tf=True; LogisticRegression C=1, solver=liblinear, max_iter=1000",
+  "selection": "No hyperparameter or threshold search; official validation split unused",
+  "primary_metric": "accuracy",
+  "additional_metrics": ["balanced accuracy", "ROC AUC", "toxic recall", "false positive rate", "Brier score", "10-bin expected calibration error"],
+  "uncertainty": "1000 independent within-environment row bootstrap resamples for shifted minus ID accuracy; conditional on fixed model",
+  "subgroups": "Eight WILDS identity annotations, positive if >=0.5; overlapping groups; report denominators and identity-by-label accuracy",
+  "data_sha256": "403e638c83a225d738a937ff98b61fd0631e30f710d57928c7766d413526b77f"
+}

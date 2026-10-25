@@ -1,0 +1,213 @@
+---
+title: "When the Test Environment Changes"
+author: "Urmi Rani Biswas"
+subtitle: "ANLY 735 · Week 8 · Replication Laboratory #3"
+date: "2026-10-25"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: true
+    theme: cosmo
+  docx:
+    toc: false
+bibliography: references.bib
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+#| output: false
+import json
+from pathlib import Path
+import pandas as pd
+from IPython.display import Markdown, display
+from analysis import run
+
+# Refit from raw data on every render; there is no cached analytical result.
+provenance = run()
+root = Path.cwd()
+perf = pd.read_csv(root / 'results/performance.csv').set_index('environment')
+envs = pd.read_csv(root / 'results/environments.csv').set_index('environment')
+sub = pd.read_csv(root / 'results/subgroups.csv')
+cells = pd.read_csv(root / 'results/identity_label_accuracy.csv')
+features = pd.read_csv(root / 'results/feature_shift.csv')
+idrow, ood = perf.loc['ID'], perf.loc['Shifted']
+def pct(x): return f'{100*x:.2f}%'
+def pp(x): return f'{100*x:+.2f} percentage points'
+def table(frame): display(Markdown(frame.to_markdown(index=False)))
+```
+
+# Study and replication question
+
+**Article:** *WILDS: A Benchmark of in-the-Wild Distribution Shifts*, Koh et al. (2021), ICML/PMLR 139, 5637–5664. **Strategy:** Partial replication. **Question:** Does a single toxicity classifier generalize equally well to held-out comments with and without a Muslim-identity annotation when only the latter environment is represented in training?
+
+The course starter is a general scholarly-report template. It supplies no dataset, model, or Week 8 split. The choices below operationalize the assignment using original CivilComments-WILDS data and an adapted, explicitly documented experiment. They are analyst choices, not instructor-prescribed settings.
+
+# 1. Research claim
+
+WILDS argues that familiar-condition evaluation can overstate performance in meaningful deployment environments [@koh2021wilds]. CivilComments makes a related point about subpopulations: high average accuracy can coexist with poor accuracy on particular identity-and-label groups. Its task is binary toxicity classification; the input is a comment, and identity annotations indicate which demographic identities are mentioned. They do **not** identify the demographic characteristics of the author.
+
+The target claim here is that strong performance in a development-like population does not guarantee comparable performance in a population poorly represented during development. Accuracy is the primary metric, supplemented by balanced accuracy, discrimination, error rates, and calibration evidence. The experiment retains one fitted pipeline while changing only the evaluation population. It investigates a scoped generalization claim rather than attempting to establish that all shifts necessarily reduce accuracy or to reproduce the entire benchmark.
+
+# 2. Replication strategy
+
+This is a **partial replication** because it uses original WILDS data and its annotation conventions but changes both the model and environment design. WILDS CivilComments evaluates average and worst identity-by-label accuracy; its published comparison is not a conventional disjoint-domain ID/OOD experiment. Here, an annotation score of at least 0.5 defines the shifted environment, and comments below that threshold define the development-like environment. This choice is fixed in `protocol.json` before model fitting and is motivated by WILDS' identity-related robustness question.
+
+The model is a lightweight TF-IDF/logistic classifier rather than the paper's DistilBERT baseline. We exclude shifted-environment rows from development and divide the original test split into two disjoint evaluation environments. Consequently, a qualitative pattern can support the paper's methodological concern, but numerical equivalence to its results is not expected. No alternative identity, model, or threshold is selected after examining test performance.
+
+# 3. Data and environments
+
+The unit of analysis is one online comment. Toxicity is positive when its crowd annotation score is at least 0.5, following WILDS. Predictors are word unigrams and bigrams from `comment_text`; identity metadata, other toxicity annotations, reactions, publication identifiers, and timestamps are excluded from the predictor matrix [@borkan2019].
+
+The source is the [CivilComments-WILDS CSV mirror](https://huggingface.co/datasets/shlomihod/civil-comments-wilds/blob/3fbfeca/all_data_with_identities.csv), pinned to revision `3fbfeca`. The [official WILDS loader](https://github.com/p-lambda/wilds/blob/main/wilds/datasets/civilcomments_dataset.py) documents the schema and label thresholds. The original CodaLab URL failed certificate validation during this run; the mirror's published SHA-256 was verified before analysis. This verifies the downloaded mirror artifact, not an independent comparison against an inaccessible original download. The raw corpus is CC0; it is not included in the submission package.
+
+```{python}
+display(Markdown(f'''The raw file contains **{provenance['original_n']:,} comments**: {provenance['original_splits']['train']:,} train, {provenance['original_splits']['val']:,} validation, and {provenance['original_splits']['test']:,} test. Required-field filtering removed {provenance['missing_removed']:,} rows; normalized-text deduplication removed {provenance['duplicate_text_removed']:,} rows. Deduplication retains train before validation before test and uses lowercase, whitespace-normalized text. It does not remove semantic paraphrases. Original validation rows and training rows in the shifted environment are not used to fit or select the model.'''))
+overview = envs[['n','prevalence','mean_characters','muslim']].reset_index()
+overview['n'] = overview['n'].astype(int)
+overview['prevalence'] = overview['prevalence'].map(pct)
+overview['muslim'] = overview['muslim'].map(pct)
+overview['mean_characters'] = overview['mean_characters'].round(1)
+overview.columns = ['Environment','Comments','Toxic prevalence','Mean characters','Muslim annotation ≥ 0.5']
+table(overview)
+```
+
+**Development:** original train rows below the annotation threshold. **ID:** original test rows below that threshold. **Shifted:** original test rows at or above that threshold. Thus ID means development-like with respect to this operational definition; it does not prove identical distributions in every other respect. Below-threshold comments may still contain Muslim-related language. The shifted domain is absent according to the annotation rule, not necessarily absent in every lexical or semantic sense.
+
+# 4. Method
+
+One pipeline is fitted once per analysis run. TF-IDF lowercases text, uses scikit-learn's default word tokenizer, includes unigrams and bigrams, requires a document frequency of at least 3, uses sublinear term frequency and L2 document normalization, and retains at most 50,000 features. Vocabulary and inverse document frequencies are fitted only on development comments. Logistic regression uses `C=1`, L2 regularization, the `liblinear` solver, no class weighting, at most 1,000 iterations, and seed 735. Toxicity is predicted at probability ≥ 0.5. There is no hyperparameter search, threshold tuning, calibration fit, or retraining between evaluations. Convergence warnings are treated as errors.
+
+Accuracy measures overall classification, balanced accuracy averages class-specific recall, and ROC AUC measures ranking. Toxic recall and false-positive rate expose asymmetric moderation errors. Brier score is mean squared probability error; lower is better. Expected calibration error (ECE) uses ten equal-width probability bins and is descriptive, not a complete calibration test. An independent within-environment row bootstrap with 1,000 draws estimates uncertainty in shifted-minus-ID accuracy conditional on this fitted model. It does not capture training variability or dependence among comments from the same discussion.
+
+# 5. Results: one model, two environments
+
+```{python}
+labels = {'accuracy':'Accuracy ↑', 'balanced_accuracy':'Balanced accuracy ↑',
+          'auc':'ROC AUC ↑', 'toxic_recall':'Toxic recall ↑',
+          'false_positive_rate':'False-positive rate ↓', 'brier':'Brier score ↓', 'ece':'10-bin ECE ↓'}
+rows = []
+for key, label in labels.items():
+    percentage = key not in ['auc', 'brier']
+    fmt = pct if percentage else lambda x: f'{x:.4f}'
+    delta = f'{100*(ood[key]-idrow[key]):+.2f} pp' if percentage else f'{ood[key]-idrow[key]:+.4f}'
+    rows.append({'Metric':label, 'ID':fmt(idrow[key]), 'Shifted':fmt(ood[key]), 'Shifted − ID':delta})
+table(pd.DataFrame(rows))
+lo, hi = provenance['accuracy_delta_ci']
+display(Markdown(f'''ID accuracy is **{pct(idrow.accuracy)}**, compared with **{pct(ood.accuracy)}** in the shifted environment: a change of **{pp(ood.accuracy-idrow.accuracy)}**. The conditional 95% bootstrap interval for the accuracy difference is [{100*lo:+.2f}, {100*hi:+.2f}] percentage points. The interval concerns this annotation-defined contrast and this fitted model, not future deployment populations.
+
+An always-nontoxic decision would score {pct(1-idrow.prevalence)} ID accuracy and {pct(1-ood.prevalence)} shifted accuracy. These are arithmetic reference values, not additional fitted models; they show why overall accuracy needs class-sensitive context. The model's shifted toxic recall is {pct(ood.toxic_recall)} and its false-positive rate is {pct(ood.false_positive_rate)}. Brier score changes from {idrow.brier:.4f} to {ood.brier:.4f}, while ECE changes from {pct(idrow.ece)} to {pct(ood.ece)}. Neither probability metric establishes safety at a particular moderation threshold.'''))
+display(Markdown(f'''Among the percentage-point changes in the table, **toxic recall changes most**, by {pp(ood.toxic_recall-idrow.toxic_recall)}. The high ID accuracy already hides low sensitivity: the model misses {pct(1-idrow.toxic_recall)} of toxic ID comments and {pct(1-ood.toxic_recall)} of toxic shifted comments. ROC AUC also drops from {idrow.auc:.4f} to {ood.auc:.4f}, so the contrast is not confined to the chosen 0.5 threshold. Comparing AUC or Brier changes directly with percentage-point changes would mix different scales.'''))
+```
+
+## Look beneath the average
+
+Groups overlap: a comment can mention multiple identities. Group membership describes comment content, not authors or readers. The table reports sample size and accuracy within every available positive identity annotation; an absent ID Muslim group is a consequence of the split, not zero accuracy.
+
+```{python}
+group_table = sub.pivot(index='identity', columns='environment', values=['n','accuracy'])
+group_rows = []
+for identity in group_table.index:
+    a, b = group_table.loc[identity, ('accuracy','ID')], group_table.loc[identity, ('accuracy','Shifted')]
+    ni, ns = group_table.loc[identity, ('n','ID')], group_table.loc[identity, ('n','Shifted')]
+    group_rows.append({'Identity mentioned':identity,
+        'ID n': '—' if pd.isna(ni) else f'{int(ni):,}',
+        'ID accuracy': '—' if pd.isna(a) else pct(a),
+        'Shifted n': '—' if pd.isna(ns) else f'{int(ns):,}',
+        'Shifted accuracy': '—' if pd.isna(b) else pct(b),
+        'Change (pp)': '—' if pd.isna(a) or pd.isna(b) else f'{100*(b-a):+.2f}'})
+table(pd.DataFrame(group_rows))
+common = group_table['accuracy'].dropna()
+deltas = (common.Shifted-common.ID).sort_values()
+comparable = cells.loc[cells.n >= 30]
+worst = comparable.sort_values('accuracy').groupby('environment', sort=False).head(1)
+display(Markdown(f'''Among identities represented in both environments, accuracy changes range from {pp(deltas.min())} ({deltas.idxmin()}) to {pp(deltas.max())} ({deltas.idxmax()}). Degradation is therefore not uniform. These comparisons are descriptive: the groups overlap, have different prevalence, and are not independent hypothesis tests. Small intersection groups are especially uncertain. The following worst identity-by-label cells have at least 30 observations; restricting the minimum count is an explicit descriptive safeguard and differs from an unrestricted official benchmark minimum.'''))
+table(worst[['environment','identity','label','n','accuracy']].assign(
+    accuracy=lambda d: d.accuracy.map(pct)).rename(columns={'label':'True toxic label'}))
+display(Markdown('The full identity-by-label counts and accuracies, including smaller cells, are retained in `results/identity_label_accuracy.csv`. Within a true-toxic cell, accuracy equals toxic recall; within a nontoxic cell it equals specificity. These cells reveal errors that identity-level averages can conceal.'))
+```
+
+## Diagnose before retraining
+
+```{python}
+display(Markdown(f'''Toxic prevalence changes from {pct(idrow.prevalence)} to {pct(ood.prevalence)} ({pp(ood.prevalence-idrow.prevalence)}). Average comment length changes from {envs.loc['ID','mean_characters']:.1f} to {envs.loc['Shifted','mean_characters']:.1f} characters. Both composition and text content therefore differ. The largest absolute standardized changes among TF-IDF predictor coordinates are shown below. Each difference is (shifted mean − ID mean) divided by its development standard deviation; it describes lexical composition, not a causal feature effect.'''))
+table(features.head(8)[['feature','standardized_difference']].round(3))
+standardized_accuracy = ((1-idrow.prevalence)*(1-ood.false_positive_rate)
+                         + idrow.prevalence*ood.toxic_recall)
+display(Markdown(f'''Using the ID class prevalence to reweight shifted specificity and sensitivity gives a descriptive prevalence-standardized shifted accuracy of **{pct(standardized_accuracy)}**, compared with {pct(idrow.accuracy)} ID accuracy. Under this reweighting, the gap is {100*(standardized_accuracy-idrow.accuracy):+.2f} percentage points; the raw accuracy contrast is therefore strongly sensitive to the class mix. Lower AUC and toxic recall still provide evidence of weaker performance within the shifted population. This decomposition does not identify label shift as the sole mechanism, because topic and language also differ within each class.
+
+The proportion of evaluation unigram/bigram occurrences outside the retained training vocabulary is {pct(provenance['oov_ngram_rate']['ID'])} ID and {pct(provenance['oov_ngram_rate']['Shifted'])} shifted. This rate includes rare terms omitted by the 50,000-feature cap and is not simply the fraction of unseen words. Identity-annotated content is poorly represented by design, but annotation differences, context, sarcasm, and label ambiguity can also explain errors. Both environments use the same dataset schema and rating framework; this experiment does not independently audit annotation practices or demonstrate a change in measurement. It also cannot determine from aggregate diagnostics alone whether the conditional predictor–outcome relationship changed.'''))
+```
+
+# 6. Compare with the original study
+
+In Table 1, Koh et al. report **92.2% (SD 0.1)** average accuracy and **56.0% (SD 3.6)** worst-group accuracy for CivilComments-WILDS under empirical risk minimization [@koh2021wilds]. Those parentheses summarize variation across replicate training runs, not a confidence interval for this experiment. The two paper values summarize different aggregations, with an “Average” ID comparison; they are not performance estimates on our two annotation-defined test environments.
+
+```{python}
+table(pd.DataFrame([
+    {'Evidence':'Published average accuracy','Original study':'92.2% (SD 0.1)','This experiment':'Different comparison; not replicated exactly'},
+    {'Evidence':'Published worst-group accuracy','Original study':'56.0% (SD 3.6)','This experiment':'Different model, split, and group minimum'},
+    {'Evidence':'Development-like test accuracy','Original study':'Not our split','This experiment':pct(idrow.accuracy)},
+    {'Evidence':'Held-out annotation environment accuracy','Original study':'Not our split','This experiment':pct(ood.accuracy)}]))
+```
+
+The empirical comparison asks whether environment-sensitive evaluation changes the judgment of one model. Any agreement in direction supports that limited methodological insight. It does not reproduce DistilBERT's performance, establish a benchmark improvement, or estimate how much all naturally occurring shifts degrade models. Differences arise from architecture, deliberately excluded training content, deduplication, class composition, and evaluation definition. Unlike the paper's original subpopulation evaluation, our design turns one annotation dimension into an explicit held-out environment; that makes the laboratory contrast clear but narrows external validity. The identity-by-label analysis connects the result back to WILDS' warning that averages can conceal local failures.
+
+## Deployment judgment: REVALIDATE
+
+The available evidence does not justify relying on development-like accuracy for the shifted population. Before deployment, obtain a representative, independently labeled sample from the intended moderation setting and predefine acceptable false-positive and false-negative costs with affected stakeholders. Validate calibration, identity-by-label error rates, and threshold choices on a separate validation sample; keep a final evaluation sample untouched. If a system is later introduced, route uncertain or consequential decisions to human review, monitor errors by environment, and provide an appeal mechanism. These safeguards require their own evaluation; they do not repair the measured errors automatically.
+
+## Limits of the experiment
+
+This is one annotation-defined shift, one model configuration, and one seed. It cannot establish causal discrimination, author-level fairness, performance on other religions or languages, chronological transportability, or real moderation outcomes. Crowd labels may reflect disagreement or annotation bias. Deduplication removes exact normalized matches but not near duplicates, common articles, or conversation dependencies. The row bootstrap may understate uncertainty when comments are clustered by article or publication. ECE depends on binning, and Brier score reflects both prevalence and probability quality. No held-out deployment data, human baseline, multi-seed model variation, or intervention evaluation is available. These limits motivate revalidation even if some aggregate metrics appear favorable.
+
+# 7. Reproducibility check
+
+- [x] Data source, pinned mirror revision, and checksum documented.
+- [x] One end-to-end executable analysis and training-only preprocessing.
+- [x] Environment definitions and random seed recorded in `protocol.json`.
+- [x] Disjoint normalized texts verified across development and evaluation sets.
+- [x] Source row IDs and analysis roles retained in `results/split_manifest.csv`.
+- [x] Complete metrics, diagnostics, subgroup denominators, and package versions saved.
+- [x] README provides download, analysis, and Quarto rendering commands.
+
+The main reproducibility challenge was infrastructure rather than model optimization: the original CodaLab data endpoint failed certificate validation, requiring a pinned public mirror and a recorded checksum. The starter repository is a writing template rather than an executable WILDS laboratory. Making that distinction explicit prevents undocumented assumptions about a prescribed model or split. Reproducing the report therefore requires both the data-acquisition instructions and the analytical protocol, not merely the template. Package locks document this run; other operating systems may require compatible binary packages.
+
+## Session information
+
+The submitted report was rendered with Quarto 1.10.19. Python and analytical package versions are generated below from the actual execution environment.
+
+```{python}
+display(Markdown(f"**Python:** {provenance['python']}  \n**Platform:** {provenance['platform']}  \n**Seed:** {provenance['seed']}  \n**Starter commit:** `{provenance['template_commit']}`  \n**Data SHA-256:** `{provenance['data_sha256']}`  \n**Model iterations:** {provenance['model_iterations']}"))
+table(pd.DataFrame(provenance['packages'].items(), columns=['Package','Version']))
+```
+
+# 8. Extension
+
+A feasible extension is a preregistered learning-curve experiment that introduces small, increasing amounts of Muslim-annotated development data while holding the total training size, model, and features fixed. Sample these additions only from the original training split, and reserve an independent validation subset for any threshold or calibration decisions. Repeat the experiment over several training seeds, evaluate the unchanged final test environments once the design is fixed, and use article-clustered bootstrap intervals where identifiers permit. Track toxic recall, nontoxic specificity, calibration, and the worst identity-by-label cells. This would investigate whether lack of representation explains the observed failure, whether improvement transfers to overlapping identity groups, and whether benefits require substantially more labeled data. It would add evidence about a concrete mechanism rather than simply comparing a larger collection of algorithms.
+
+# Replication verdict
+
+**Partially reproduced — scoped methodological finding.** The experiment tests WILDS' concern about environment-sensitive generalization using original data and one fixed model, while the subgroup analysis checks whether aggregate evidence conceals local errors. It is a partial methodological replication, not a numerical reproduction of the published CivilComments benchmark; the results and limitations above define the scope of the verdict.
+
+## Research transparency
+
+AI assistance was used to inspect the supplied materials, implement the analysis, and draft the report. The executable checks and saved results make the analytical decisions reviewable. The student remains responsible for checking the work, understanding the environment definition and metric tradeoffs, and defending the interpretation before submission. No independent student review is claimed here.
+
+# References
+
+::: {#refs}
+:::
+
+# Appendix: executable analysis
+
+The following is the complete script used to generate the tables and diagnostics. The protocol and dependency files accompany this report.
+
+```{python}
+#| output: asis
+print('```python\n' + Path('analysis.py').read_text() + '\n```')
+```
